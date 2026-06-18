@@ -11,8 +11,7 @@ use std::collections::HashSet;
 /// ## Arguments
 /// - pathway : a pathway identifier
 /// - reactome : a set of reaction of the reactome (known to be catalyzed in the organism)
-/// - pathway_to_reactions : a mapping from pathway identifier to a set of its reactions
-///     that are required to consider it complete (may/should ignore both non-spontaneous and non-orphan reactions of the metabolic pathway)
+/// - pathway_to_reactions : a mapping from pathway identifier to a set of its reactions that are required to consider it complete (may/should ignore both non-spontaneous and non-orphan reactions of the metabolic pathway)
 pub fn get_missing_reactions(
     pathway_reactions: &HashSet<String>,
     reactome: &HashSet<String>,

@@ -39,6 +39,6 @@ pub fn init_config(config: Config) {
 
 pub fn config() -> Config {
     let config = CONFIGURATION.get().unwrap();
-    let config = (*config).clone();
-    config
+    
+    (*config).clone()
 }

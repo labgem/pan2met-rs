@@ -111,7 +111,7 @@ fn main() -> error::Result<()> {
     log::info!("Start a metabolic pathway prediction.");
     let rules = PathwayInferenceRule::all();
     let selected_rules: HashSet<String> =
-        config::config().rules.iter().map(|e| e).cloned().collect();
+        config::config().rules.iter().cloned().collect();
     let rules: Vec<PathwayInferenceRule> = rules
         .iter()
         .filter(|&rule| selected_rules.contains(rule.name()))
