@@ -14,14 +14,14 @@ predict metabolic pathways
 
 Add this in your Cargo.toml
 ```
-pan2met-rs = { version = "0.1" }
+pan2met = { version = "0.1" }
 ```
 
 ### From source
 
 ```bash
-git clone {repository_uri}
-cd 
+git clone https://github.com/labgem/pan2met-rs.git/
+cd pan2met-rs
 cargo install --path
 ```
 
