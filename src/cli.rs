@@ -35,6 +35,10 @@ pub struct Arguments {
     #[clap(short = 't', long = "taxon-id", help = "NCBI Taxonomy identifier")]
     taxon_id: Option<u32>,
 
+    /// Config
+    #[clap(short = 'c', long = "config", help = "Configuration yaml file")]
+    config: String,
+
     // Generic parameter
     /// Silence all output
     #[clap(short = 'q', long = "quiet")]
@@ -83,5 +87,9 @@ impl Arguments {
     /// Get timestamp granularity
     pub fn timestamp(&self) -> stderrlog::Timestamp {
         self.ts.unwrap_or(stderrlog::Timestamp::Off)
+    }
+
+    pub fn config(&self) -> String {
+        self.config.clone()
     }
 }

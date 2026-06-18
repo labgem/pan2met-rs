@@ -20,6 +20,7 @@ use pan2met::{cli, inference};
 
 use pan2met::padmet::{padmet_pathway_ontology, padmet_reaction_order};
 
+mod config;
 mod input;
 
 use input::read_set;
@@ -81,6 +82,10 @@ fn main() -> error::Result<()> {
         .init()
         .context("stderrlog already create a logger")?;
 
+    log::info!("Loading config from {}", arguments.config());
+    let configuration: config::Config =
+        config::read_config(arguments.config()).expect("Error reading config");
+
     log::info!("Loading catalyzed reactions.");
     let reactome: HashSet<String> = read_set(arguments.reactions())?;
     log::info!("Loading PADMet reference.");
@@ -89,7 +94,7 @@ fn main() -> error::Result<()> {
     let mut tax_id: Option<String> = None;
     let mut some_taxonomy: Option<taxonomy::GeneralTaxonomy> = None;
     if let Some(taxon_id) = arguments.taxon_id() {
-        let ncbi_directory = "/mnt/shared/bank/NCBI-Taxonomy/taxdmp_2026-01-01";
+        let ncbi_directory = configuration.reference.ncbi_taxonomy;
         let tax = taxonomy::ncbi::load(ncbi_directory)?;
         if tax.to_internal_index(&taxon_id.to_string()).is_err() {
             log::error!("taxon id {taxon_id:#} not found in the NCBI-Taxonomy.");

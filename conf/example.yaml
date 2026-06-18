@@ -2,8 +2,7 @@ reference:
   padmet: /mnt/shared/bank/metacyc.padmet
   ncbi_taxonomy: /mnt/shared/bank/NCBI-Taxonomy/taxdmp_2026-01-01
 
-pathway_score:
-  threshold: 0.5
+pathway_score_threshold: 0.5
 
 rules:
   - TransportPathway

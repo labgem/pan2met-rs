@@ -68,7 +68,11 @@ pub fn padmet_taxonomic_range(
 }
 
 /// Count how many pathway has a reaction
-pub fn padmet_count_pathways_with_reaction(reaction_id: &String, padmet_object: &PadmetSpec) -> usize {
-    padmet_object.get_relations_type_id_in(&"is_in_pathway".to_owned(), reaction_id)
-                .len()
+pub fn padmet_count_pathways_with_reaction(
+    reaction_id: &String,
+    padmet_object: &PadmetSpec,
+) -> usize {
+    padmet_object
+        .get_relations_type_id_in(&"is_in_pathway".to_owned(), reaction_id)
+        .len()
 }

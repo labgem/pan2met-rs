@@ -11,7 +11,6 @@ use taxonomy::GeneralTaxonomy;
 /* project use */
 use crate::{pathway_score, taxonomy::taxid_is_parent_of_taxid};
 
-
 /// Final decision: reject or accept a metabolic pathway
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Decision {
@@ -261,8 +260,13 @@ impl Rule<PathwayInference<'_>> for PathwayInferenceRule {
                 if ctx.decision.is_some() {
                     Ok(false)
                 } else {
-                    let score = pathway_score::PathwayScore::new(ctx.pathway_id, ctx.catalyzed_reactions, ctx.padmet_object, ctx.reactome);
-                    Ok(score.pathway_score() >= 0.35) 
+                    let score = pathway_score::PathwayScore::new(
+                        ctx.pathway_id,
+                        ctx.catalyzed_reactions,
+                        ctx.padmet_object,
+                        ctx.reactome,
+                    );
+                    Ok(score.pathway_score() >= 0.35)
                 }
             }
         }

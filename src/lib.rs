@@ -12,6 +12,7 @@ pub mod inference;
 pub mod inference_rules;
 pub mod pathway_score;
 pub mod padmet;
+pub mod pathway_score;
 pub mod taxonomy;
 
 /* project use */
