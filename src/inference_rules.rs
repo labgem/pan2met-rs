@@ -9,6 +9,7 @@ use rule_kit::Rule;
 use taxonomy::GeneralTaxonomy;
 
 /* project use */
+use crate::config;
 use crate::{pathway_score, taxonomy::taxid_is_parent_of_taxid};
 
 /// Final decision: reject or accept a metabolic pathway
@@ -266,7 +267,7 @@ impl Rule<PathwayInference<'_>> for PathwayInferenceRule {
                         ctx.padmet_object,
                         ctx.reactome,
                     );
-                    Ok(score.pathway_score() >= 0.35)
+                    Ok(score.pathway_score() >= config::config().pathway_score_threshold)
                 }
             }
         }

@@ -7,10 +7,10 @@
 /* module declaration */
 
 pub mod cli;
+pub mod config;
 pub mod error;
 pub mod inference;
 pub mod inference_rules;
-pub mod pathway_score;
 pub mod padmet;
 pub mod pathway_score;
 pub mod taxonomy;

@@ -46,12 +46,8 @@ peak_alloc = { version = "0.3", optional = true }
 padmet = { path = "../padmet-rs" }
 rule_kit = "0.1.1"
 taxonomy = "0.10.5"
-<<<<<<< HEAD
-cargo-tarpaulin = "0.35.4"
-=======
 serde_yaml = "0.9.34"
 serde = "1.0.228"
->>>>>>> 9c3e66a (feat: Add pathway score heuristics)
 
 [dev-dependencies]
 ## Functional test
