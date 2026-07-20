@@ -14,6 +14,7 @@ pub mod inference_rules;
 pub mod padmet;
 pub mod pathway_score;
 pub mod taxonomy;
+pub mod genomic_context;
 
 /* project use */
 
