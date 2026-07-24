@@ -11,6 +11,9 @@
 pub enum Error {
     #[error(transparent)]
     Log(#[from] log::SetLoggerError),
+
+    #[error("No corresponding gene family node found in pangenome graph for gene family {0}")]
+    GeneFamilyNotFoundInPangenomeGraph(String)
 }
 
 /// Alias of result

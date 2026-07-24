@@ -9,8 +9,8 @@ use std::path::PathBuf;
 
 #[derive(clap::Parser, std::fmt::Debug)]
 #[clap(
-    name = "pan2met-rs",
-    bin_name = "pan2met-rs",
+    name = "pan2met",
+    bin_name = "pan2met",
     version = "0.1.0",
     author = "Samuel Ortion <samuel@ortion.fr>"
 )]

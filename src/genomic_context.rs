@@ -5,19 +5,20 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::path::Path;
+use std::io;
 
 /* crate use */
 use petgraph::graph::NodeIndex;
 use petgraph::graph::UnGraph;
 use petgraph::visit::EdgeRef;
 
-use gt_reader::read_gt;
 use gt_reader::GraphToolGraph;
+use gt_reader::read_gt;
 
 use bidirectional_map::Bimap;
 
 /* project use */
-
+use crate::error::Result;
 /// A struct to store information on a pangenome graph
 ///
 /// We want the gene family name of a vertex,
@@ -83,13 +84,13 @@ impl PangenomeGraph {
     ///   - "strains" - `vector<string>` -- the set of strains associated with the vertex
     /// - **Edge properties**
     ///    - "strains" - `vector<string` -- the set of strains associated with the edge (i.e, if edge $(u, v)$ has strain `A` in the set of property "strains" it means the strain A has gene members of family u and v colocalized in their genomes)
-    pub fn from_gt<P>(gt_path: P) -> Self
+    pub fn from_gt<P>(gt_path: P) -> io::Result<Self>
     where
         P: AsRef<Path>,
     {
         // Read the binary gt file format
-        let graph_tool_graph = read_gt(gt_path).unwrap();
-        Self::from_graph_tool_graph(graph_tool_graph)
+        let graph_tool_graph = read_gt(gt_path)?;
+        Ok(Self::from_graph_tool_graph(graph_tool_graph))
     }
 
     /// Get the list of strains associated with a vertex
@@ -146,7 +147,6 @@ pub fn populate_undirected_graph_edges(
     for u in 0..n_vertices {
         let u_index = graph.add_node(u);
         vmap.push(u_index);
-        dbg!(&u_index);
     }
     for u in 0..n_vertices {
         let u_index = vmap[u];
@@ -159,6 +159,8 @@ pub fn populate_undirected_graph_edges(
     vmap
 }
 
+/// Get the NodeIndex of a node if already created
+/// or the NodeIndex of a new node created by the function otherwise
 pub fn get_node_index(
     map: &mut HashMap<NodeIndex, NodeIndex>,
     original_node_index: NodeIndex,
@@ -189,75 +191,58 @@ pub fn compute_gene_context_graph(
     families: &HashSet<String>,
     seed_family: &String,
     transitive: usize,
-) -> (UnGraph<NodeIndex, ()>, HashSet<String>) {
-    let mut closure_graph: UnGraph<NodeIndex, ()> = UnGraph::new_undirected();
+) -> Result<HashSet<String>> {
     let mut min_node_depth: HashMap<NodeIndex, usize> = HashMap::new();
     let mut visited_families: HashSet<String> = HashSet::new();
     let mut visited_nodes: HashSet<(NodeIndex, usize)> = HashSet::new();
     let mut queue: Vec<(NodeIndex, usize)> = Vec::new(); // the current node in the depth first search and its depth compared to the last node belonging to the families set
-    let family_nodes: &Vec<NodeIndex> = pangenome.family_vertex(seed_family).expect(&format!(
-        "Error: seed family `{seed_family:#}` not found in the pangenome graph."
-    ));
-
-    let mut closure_graph_node_vmap: HashMap<NodeIndex, NodeIndex> = HashMap::new();
+    let family_nodes: &Vec<NodeIndex> = pangenome.family_vertex(seed_family).ok_or(crate::error::Error::GeneFamilyNotFoundInPangenomeGraph(seed_family.to_owned()))?;
 
     // TODO support returning multiple closure graph starting from each family vertex.
     let node = family_nodes[0];
     queue.push((node, 0));
-    dbg!(node);
     while let Some((node, depth)) = queue.pop() {
-        if visited_nodes.contains(&(node, depth)) {
-            continue;
-        } 
-        visited_nodes.insert((node, depth));
-        
-        // Do not continue to deepen the search if we already reach a gap depth higher than the transitive size
-        if depth > transitive {
-            continue;
-        }
-        if let Some(last_depth) = min_node_depth.get(&node) {
-            // If the node was already visited at the same depth or in a shallower depth, skip it.
-            if *last_depth <= depth {
+        dbg!(&node);
+        // If the node has already been visited with a smaller or equal distance to the closest node in `families`, skip it
+        if let Some(&min_depth) = min_node_depth.get(&node) {
+            if depth >= min_depth {
                 continue;
-            } else {
-                // If the node was already visited but at a deeper location
-                min_node_depth.insert(node, depth);
             }
         }
-        // Set the depth to 0 if the node belongs to the family set
-        let node_family: &String = pangenome.vertex_family(node).expect(&format!(
-            "Error: node `{:?}` have not family set in property maps",
-            node
-        ));
-        let mut effective_depth = depth;
-        if families.contains(node_family) {
-            effective_depth = 0;
-            visited_families.insert(node_family.to_owned()); // We visited a node with this family
+
+        // If the node's depth exceeds the allowed transitive distance, do not explore neighbors
+        if depth >= transitive {
+            continue;
         }
+
+        let mut effective_depth = depth;
+        // Add the node's family to the visited families set
+        if let Some(family) = pangenome.vertex_family(node) {
+            if families.contains(family) {
+                // Update the minimum depth for this node
+                min_node_depth.insert(node, depth);
+                visited_families.insert(family.clone());
+                effective_depth = 0;
+            }
+        }
+
         // Add the successor nodes to the queue
-        for edge in pangenome.graph.edges(node.into()) {
-            let target = edge.target();
-            queue.push((target.into(), effective_depth + 1));
-            let closure_u = get_node_index(
-                &mut closure_graph_node_vmap,
-                node.into(),
-                &mut closure_graph,
-            );
-            let closure_v = get_node_index(
-                &mut closure_graph_node_vmap,
-                target.into(),
-                &mut closure_graph,
-            );
-            closure_graph.add_edge(closure_u, closure_v, ());
+        for edge in pangenome.graph.edges(node) {
+            let neighbor_node = edge.target();
+            let neighbor_depth = effective_depth + 1;
+            queue.push((neighbor_node, neighbor_depth));
+            visited_nodes.insert((neighbor_node, neighbor_depth));
         }
     }
-
-    (closure_graph, visited_families)
+    Ok(visited_families)
 }
 
 #[cfg(test)]
 mod tests {
+    use std::io;
     use gt_reader::property_maps::PropertyMaps;
+
+    use padmet::{io::read_lines, spec::PadmetSpec};
 
     use super::*;
 
@@ -365,11 +350,24 @@ mod tests {
         families.insert(String::from("fam2"));
         families.insert(String::from("fam4"));
         let seed_family = String::from("fam1");
-        let res = compute_gene_context_graph(&pangenome, &families, &seed_family, 1);
+        let res = compute_gene_context_graph(&pangenome, &families, &seed_family, 2).unwrap();
         let mut expected_visited: HashSet<String> = HashSet::new();
         expected_visited.insert(String::from("fam1"));
         expected_visited.insert(String::from("fam2"));
         expected_visited.insert(String::from("fam4"));
-        assert_eq!(expected_visited, res.1);
+        assert_eq!(expected_visited, res);
     }
+
+    
+
+    // #[test]
+    // fn test_closure_lactose_operon_ecoli() {
+    //     let pangenome = PangenomeGraph::from_gt(
+    //         "./test/test_data/s__Escherichia_coli_GTDB_all_v1.0.0/pangenomeGraph.gt",
+    //     );
+    //     let padmet_object: PadmetSpec =
+    //         PadmetSpec::from_file("/mnt/shared/bank/metacyc.padmet").unwrap();
+    //     let family_to_reactions = read_mapping("./test/test_data/s__Escherichia_coli_GTDB_all_v1.0.0/pan2met-wf/results/merged_with_ec.asso").unwrap();
+    //     let reactions_to_families: HashMap<String, Vec<String>> = reverse_mapping(&family_to_reactions);       
+    // }
 }

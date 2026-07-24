@@ -15,6 +15,7 @@ pub mod padmet;
 pub mod pathway_score;
 pub mod taxonomy;
 pub mod genomic_context;
+pub mod input;
 
 /* project use */
 

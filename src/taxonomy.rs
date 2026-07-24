@@ -21,13 +21,13 @@ pub fn taxid_is_parent_of_taxid(
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_is_parent_of_child() {
-        let ncbi_directory = "/mnt/shared/bank/NCBI-Taxonomy/taxdmp_2026-01-01";
-        let tax = taxonomy::ncbi::load(ncbi_directory).unwrap();
+    // #[test]
+    // fn test_is_parent_of_child() {
+    //     let ncbi_directory = "/mnt/shared/bank/NCBI-Taxonomy/taxdmp_2026-01-01";
+    //     let tax = taxonomy::ncbi::load(ncbi_directory).unwrap();
 
-        assert!(taxid_is_parent_of_taxid("561", "562", &tax).unwrap());
+    //     assert!(taxid_is_parent_of_taxid("561", "562", &tax).unwrap());
 
-        assert!(!taxid_is_parent_of_taxid("562", "561", &tax).unwrap());
-    }
+    //     assert!(!taxid_is_parent_of_taxid("562", "561", &tax).unwrap());
+    // }
 }

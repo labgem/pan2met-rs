@@ -44,10 +44,17 @@ peak_alloc = { version = "0.3", optional = true }
 
 ## PADMet reading
 padmet = { path = "../padmet-rs" }
-rule_kit = "0.1.1"
 taxonomy = "0.10.5"
 serde_yaml = "0.9.34"
 serde = "1.0.228"
+petgraph = "0.8.3"
+
+## Decision rules
+rule_kit = "0.1.1"
+
+## Reading graph-tools' gt file format
+gt_reader = { version = "0.1" }
+bidirectional-map = "0.1.4"
 
 [dev-dependencies]
 ## Functional test

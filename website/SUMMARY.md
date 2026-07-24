@@ -10,7 +10,7 @@
 
 # Contributor Guide
 
-- [Dev documentation](doc/pan2met-rs/index.html)
+- [Dev documentation](doc/pan2met/index.html)
 - [Code Coverage](tarpaulin-report.html)
 - [Contributing](contributing.md)
 - [Code of Conduct](code_of_conduct.md)

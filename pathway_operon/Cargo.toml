@@ -1,0 +1,8 @@
+[package]
+name = "pathway_operon"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+padmet = "0.1.0"
+pan2met = { path = ".." }
