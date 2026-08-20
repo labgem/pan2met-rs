@@ -4,13 +4,17 @@
 /* std use */
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::path::Path;
+use std::hash::Hash;
 use std::io;
+use std::iter::FromIterator;
+use std::path::Path;
 
 /* crate use */
 use petgraph::graph::NodeIndex;
 use petgraph::graph::UnGraph;
 use petgraph::visit::EdgeRef;
+
+use padmet::spec::PadmetSpec;
 
 use gt_reader::GraphToolGraph;
 use gt_reader::read_gt;
@@ -58,6 +62,7 @@ impl PangenomeGraph {
                 .expect("Error: pangenome gt file should contain a vertex property map named \"nid\" of type `vector<string>`.")
                 .get(&vertex_graph_tool)
                 .expect(&format!("Error: pangenome gt file vertex property map \"nid\" should contain a property for the vertex {}.", vertex_graph_tool));
+            
             node_index_to_family_mapping.insert(vertex_graph, family.to_owned());
 
             if let Some(family_vertices) = family_to_node_index_mapping.get_mut(family) {
@@ -196,7 +201,9 @@ pub fn compute_gene_context_graph(
     let mut visited_families: HashSet<String> = HashSet::new();
     let mut visited_nodes: HashSet<(NodeIndex, usize)> = HashSet::new();
     let mut queue: Vec<(NodeIndex, usize)> = Vec::new(); // the current node in the depth first search and its depth compared to the last node belonging to the families set
-    let family_nodes: &Vec<NodeIndex> = pangenome.family_vertex(seed_family).ok_or(crate::error::Error::GeneFamilyNotFoundInPangenomeGraph(seed_family.to_owned()))?;
+    let family_nodes: &Vec<NodeIndex> = pangenome.family_vertex(seed_family).ok_or(
+        crate::error::Error::GeneFamilyNotFoundInPangenomeGraph(seed_family.to_owned()),
+    )?;
 
     // TODO support returning multiple closure graph starting from each family vertex.
     let node = family_nodes[0];
@@ -237,12 +244,152 @@ pub fn compute_gene_context_graph(
     Ok(visited_families)
 }
 
+/// Check if a pangenome graph gene family node can catalyse a reaction
+pub fn family_node_catalyzis(
+    family_node: &String,
+    families_to_reactions: &HashMap<String, Vec<String>>,
+    reaction: &String,
+) -> bool {
+    if let Some(catalyzes) = families_to_reactions.get(family_node) {
+        return catalyzes.contains(reaction);
+    } else {
+        return false;
+    }
+}
+
+/// Build a sub-hashmap of family node that a set of reaction can be catalyzed by
+pub fn sub_hashmap_of_family_node(
+    reactions: &Vec<String>,
+    reaction_to_families: &HashMap<String, Vec<String>>,
+    families_to_reactions: &HashMap<String, Vec<String>>,
+) -> HashMap<String, Vec<String>> {
+    let mut sub_families_to_reactions: HashMap<String, Vec<String>> = HashMap::new();
+    for reaction in reactions {
+        if let Some(families) = reaction_to_families.get(reaction) {
+            for family in families {
+                if let Some(families_catalyzed_reactions) = families_to_reactions.get(family) {
+                    sub_families_to_reactions
+                        .insert(family.to_string(), families_catalyzed_reactions.clone());
+                }
+            }
+        }
+    }
+    sub_families_to_reactions
+}
+
+/// Order seed reaction nodes by the number of catalyzes they have
+pub fn order_reaction_by_catalysis(
+    reactions: &Vec<String>,
+    reaction_to_families: &HashMap<String, Vec<String>>,
+) -> Vec<String> {
+    let mut sorted_reactions = reactions.clone();
+    sorted_reactions.sort_by(|r1, r2| {
+        reaction_to_families
+            .get(r1)
+            .unwrap_or(&Vec::new())
+            .len()
+            .cmp(&reaction_to_families.get(r2).unwrap_or(&Vec::new()).len())
+    });
+    sorted_reactions
+}
+
+fn hashset<T>(data: &[T]) -> HashSet<T>
+where
+    T: Clone + Eq + Hash,
+{
+    HashSet::from_iter(data.iter().cloned())
+}
+
+/// Check if a pathway is in a transitive closure
+///
+/// ## Arguments
+/// - **graph** -- the pangenome graph, each node represents a gene family. The nodes are linked by edges with labels that corresponds to a set of genomes where the two gene families are colocalized
+/// - **reaction_to_families** -- a mapping from reaction identifier to their catalyzer gene families identifiers
+/// - **families_to_reactions** -- a mapping from families identifier back to their catalyzed reactions identifiers
+/// - **reactions** -- a set non orphan non spontaneous reaction we consider to reset the number of gaps in the transitive closure and we want to cover for the pathway to be considered to be in a transitive closure
+/// - **transitive** -- size of the transitive closure (allowed gaps between two nodes in `reactions`) to build the graph
+///
+/// ## Returns
+/// true if all reaction can be found in a transitive closure with allowed gaps in the pangenome graph, false otherwise
+pub fn pathway_is_in_a_transitive_closure_context_graph(
+    pangenome: &PangenomeGraph,
+    reactions: &Vec<String>,
+    reaction_to_families: &HashMap<String, Vec<String>>,
+    families_to_reactions: &HashMap<String, Vec<String>>,
+    transitive: usize,
+) -> Result<bool> {
+    let reaction_ordered_by_catalysis =
+        order_reaction_by_catalysis(reactions, reaction_to_families);
+    if let Some(seed_reaction) = reaction_ordered_by_catalysis.first() {
+        let sub_families_to_reactions =
+            sub_hashmap_of_family_node(reactions, reaction_to_families, families_to_reactions);
+        if let Some(seed_families) = reaction_to_families.get(seed_reaction) {
+            for seed_family in seed_families {
+                let family_nodes: &Vec<NodeIndex> = pangenome.family_vertex(seed_family).ok_or(
+                    crate::error::Error::GeneFamilyNotFoundInPangenomeGraph(seed_family.to_owned()),
+                )?;
+                for &seed_node in family_nodes {
+                    let mut min_node_depth: HashMap<NodeIndex, usize> = HashMap::new();
+                    let mut visited_families: HashSet<String> = HashSet::new();
+                    let mut visited_nodes: HashSet<(NodeIndex, usize)> = HashSet::new();
+                    let mut queue: Vec<(NodeIndex, usize)> = Vec::new(); // the current node in the depth first search and its depth compared to the last node belonging to the families set
+
+                    let mut uncovered_reactions: HashSet<String> = hashset::<String>(reactions);
+                    let node = seed_node;
+                    queue.push((node, 0));
+                    while let Some((node, depth)) = queue.pop() {
+                        // If the node has already been visited with a smaller or equal distance to the closest node in `families`, skip it
+                        if let Some(&min_depth) = min_node_depth.get(&node) {
+                            if depth >= min_depth {
+                                continue;
+                            }
+                        }
+
+                        // If the node's depth exceeds the allowed transitive distance, do not explore neighbors
+                        if depth >= transitive {
+                            continue;
+                        }
+
+                        let mut effective_depth = depth;
+                        // Add the node's family to the visited families set
+                        if let Some(family) = pangenome.vertex_family(node) {
+                            if let Some(reactions) = sub_families_to_reactions.get(family) {
+                                // Update the minimum depth for this node
+                                min_node_depth.insert(node, depth);
+                                visited_families.insert(family.clone());
+                                effective_depth = 0;
+
+                                // Update the set of covered reactions
+                                for reaction in reactions {
+                                    if uncovered_reactions.contains(reaction) {
+                                        uncovered_reactions.remove(reaction);
+                                    }
+                                }
+                                if uncovered_reactions.is_empty() {
+                                    return Ok(true);
+                                }
+                            }
+                        }
+
+                        // Add the successor nodes to the queue
+                        for edge in pangenome.graph.edges(node) {
+                            let neighbor_node = edge.target();
+                            let neighbor_depth = effective_depth + 1;
+                            queue.push((neighbor_node, neighbor_depth));
+                            visited_nodes.insert((neighbor_node, neighbor_depth));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(false)
+}
+
 #[cfg(test)]
 mod tests {
-    use std::io;
     use gt_reader::property_maps::PropertyMaps;
-
-    use padmet::{io::read_lines, spec::PadmetSpec};
 
     use super::*;
 
@@ -358,8 +505,6 @@ mod tests {
         assert_eq!(expected_visited, res);
     }
 
-    
-
     // #[test]
     // fn test_closure_lactose_operon_ecoli() {
     //     let pangenome = PangenomeGraph::from_gt(
@@ -368,6 +513,34 @@ mod tests {
     //     let padmet_object: PadmetSpec =
     //         PadmetSpec::from_file("/mnt/shared/bank/metacyc.padmet").unwrap();
     //     let family_to_reactions = read_mapping("./test/test_data/s__Escherichia_coli_GTDB_all_v1.0.0/pan2met-wf/results/merged_with_ec.asso").unwrap();
-    //     let reactions_to_families: HashMap<String, Vec<String>> = reverse_mapping(&family_to_reactions);       
+    //     let reactions_to_families: HashMap<String, Vec<String>> = reverse_mapping(&family_to_reactions);
     // }
+
+    #[test]
+    fn test_opening_files_ecoli() {
+        let pangenome = PangenomeGraph::from_gt(
+            "./tests/test_data/s__Escherichia_coli_GTDB_all_v1.0.0/pangenomeGraph.gt",
+        );
+        let padmet_object: PadmetSpec =
+            PadmetSpec::from_file("/mnt/shared/bank/metacyc.padmet").unwrap();
+        let family_to_reactions = crate::input::read_mapping("./tests/test_data/s__Escherichia_coli_GTDB_all_v1.0.0/pan2met-wf/s__Escherichia_coli/merged_with_ec.asso").unwrap();
+        let reactions_to_families: HashMap<String, Vec<String>> = crate::input::reverse_mapping(&family_to_reactions);
+    }
+
+    #[test]
+    fn test_seed_node_finding_ecoli() {
+        let pangenome = PangenomeGraph::from_gt(
+            "./tests/test_data/s__Escherichia_coli_GTDB_all_v1.0.0/pangenomeGraph.gt",
+        ).unwrap();
+        let padmet_object: PadmetSpec =
+            PadmetSpec::from_file("/mnt/shared/bank/metacyc.padmet").unwrap();
+        let family_to_reactions = crate::input::read_mapping("./tests/test_data/s__Escherichia_coli_GTDB_all_v1.0.0/pan2met-wf/s__Escherichia_coli/merged_with_ec.asso").unwrap();
+        let reactions_to_families: HashMap<String, Vec<String>> = crate::input::reverse_mapping(&family_to_reactions);
+        let seed_node = pangenome.family_to_node_index_mapping.get(&"GCF_002484735.1_CDS_3755".to_string());
+        assert!(!pangenome.family_to_node_index_mapping.is_empty());
+        for (family, _) in pangenome.family_to_node_index_mapping {
+            println!("{family:#}");
+        }
+        println!("")
+    }
 }

@@ -20,7 +20,7 @@ pub struct Arguments {
     reactions: PathBuf,
 
     /// Input PADMet reference knowledge base
-    #[clap(long = "reference", help = "Reference PADMet file")]
+    #[clap(long = "padmet", help = "Reference metabolic network in PADMet format")]
     padmet: PathBuf,
 
     /// Ouput path to a file listing predicted metabolic pathways
