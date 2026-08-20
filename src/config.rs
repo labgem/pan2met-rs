@@ -12,8 +12,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Config {
     pub reference: ConfigReference,
-    pub pathway_score_threshold: f64,
+    pub pathway_score: ConfigPathwayScore,
     pub rules: Vec<String>,
+    pub genomic_context: ConfigGenomicContext,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -21,6 +22,18 @@ pub struct ConfigReference {
     pub padmet: String,
     pub ncbi_taxonomy: String,
 }
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct ConfigPathwayScore {
+    pub threshold: f64,
+    pub components: Vec<String>
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+pub struct ConfigGenomicContext {
+    pub transitive_closure_gaps: usize
+}
+
 
 pub fn read_config<P>(config_path: P) -> Result<Config, Box<dyn Error>>
 where

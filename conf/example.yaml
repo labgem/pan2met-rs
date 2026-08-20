@@ -2,8 +2,18 @@ reference:
   padmet: /mnt/shared/bank/metacyc.padmet
   ncbi_taxonomy: /mnt/shared/bank/NCBI-Taxonomy/taxdmp_2026-01-01
 
+
 pathway_score:
-  threshold: 0.5
+  threshold: 0.1
+  components:
+    - GenomicContextBoost
+    - UniquenessScore
+    - PresenceScore
+    - KeyReactionScore
+
+genomic_context:
+  transitive_closure_gaps: 3
+
 
 rules:
   - TransportPathway

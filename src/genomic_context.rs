@@ -14,7 +14,6 @@ use petgraph::graph::NodeIndex;
 use petgraph::graph::UnGraph;
 use petgraph::visit::EdgeRef;
 
-use padmet::spec::PadmetSpec;
 
 use gt_reader::GraphToolGraph;
 use gt_reader::read_gt;
@@ -390,6 +389,8 @@ pub fn pathway_is_in_a_transitive_closure_context_graph(
 #[cfg(test)]
 mod tests {
     use gt_reader::property_maps::PropertyMaps;
+
+    use padmet::spec::PadmetSpec;
 
     use super::*;
 

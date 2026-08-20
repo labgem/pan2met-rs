@@ -76,3 +76,25 @@ pub fn padmet_count_pathways_with_reaction(
         .get_relations_type_id_in(&"is_in_pathway".to_owned(), reaction_id)
         .len()
 }
+
+pub fn is_spontaneous_reaction(reaction: &String, padmet_object: &PadmetSpec) -> bool {
+    if let Some(reaction_node) = padmet_object.dic_of_nodes.get(reaction) {
+        if let Some(spontaneous_p) = reaction_node.node_misc.get("SPONTANEOUS") {
+            if spontaneous_p[0] == "T" {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+pub fn filter_non_orphan_non_spontaneous_reactions(
+    reactions: &Vec<String>,
+    padmet_object: &PadmetSpec,
+) -> Vec<String> {
+    reactions
+        .iter()
+        .filter(|reaction| !is_spontaneous_reaction(reaction, padmet_object))
+        .cloned()
+        .collect()
+}

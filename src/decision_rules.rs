@@ -2,6 +2,7 @@
 //!
 
 /* std use */
+use std::collections::HashMap;
 use std::collections::HashSet;
 
 /* crate use */
@@ -10,6 +11,7 @@ use taxonomy::GeneralTaxonomy;
 
 /* project use */
 use crate::config;
+use crate::genomic_context::PangenomeGraph;
 use crate::{pathway_score, taxonomy::taxid_is_parent_of_taxid};
 
 /// Final decision: reject or accept a metabolic pathway
@@ -19,7 +21,6 @@ pub enum Decision {
     Accept,
 }
 
-#[derive(Debug)]
 pub struct PathwayInference<'a> {
     pub pathway_id: &'a String,
     pub catalyzed_reactions: &'a HashSet<String>,
@@ -31,6 +32,9 @@ pub struct PathwayInference<'a> {
     pub reaction_order: &'a Option<Vec<String>>,
     pub decision: Option<Decision>,
     pub padmet_object: &'a padmet::spec::PadmetSpec,
+    pub reaction_to_families: &'a HashMap<String, Vec<String>>,
+    pub families_to_reactions: &'a HashMap<String, Vec<String>>,
+    pub pangenome: Option<&'a PangenomeGraph>,
 }
 
 #[derive(Debug)]
@@ -51,6 +55,9 @@ impl<'a> PathwayInference<'a> {
         ncbi_taxonomy: &'a Option<GeneralTaxonomy>,
         reaction_order: &'a Option<Vec<String>>,
         padmet_object: &'a padmet::spec::PadmetSpec,
+        reaction_to_families: &'a HashMap<String, Vec<String>>,
+        families_to_reactions: &'a HashMap<String, Vec<String>>,
+        pangenome: Option<&'a PangenomeGraph>,
     ) -> Self {
         PathwayInference {
             pathway_id,
@@ -63,6 +70,9 @@ impl<'a> PathwayInference<'a> {
             reaction_order,
             decision: None,
             padmet_object,
+            reaction_to_families,
+            families_to_reactions,
+            pangenome,
         }
     }
 
@@ -266,8 +276,11 @@ impl Rule<PathwayInference<'_>> for PathwayInferenceRule {
                         ctx.catalyzed_reactions,
                         ctx.padmet_object,
                         ctx.reactome,
+                        ctx.reaction_to_families,
+                        ctx.families_to_reactions,
+                        ctx.pangenome,
                     );
-                    Ok(score.pathway_score() >= config::config().pathway_score_threshold)
+                    Ok(score.pathway_score() >= config::config().pathway_score.threshold)
                 }
             }
         }

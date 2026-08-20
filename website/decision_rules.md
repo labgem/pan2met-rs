@@ -43,21 +43,48 @@ If no decision rule accepted nor rejected the pathway at the end of the review, 
 
 #### `PathwayScore` -- Accept the pathway if its pathway score exceeds a threshold
 
-#### How is the `PathwayScore` computed?
+#### How is the PathwayScore computed?
 
-The `PathwayScore` is a score that aims at estimating how likely a pathway is to be effectively in the target organism metabolism.
+The $PathwayScore$ is a score that aims at estimating how likely a pathway is to be effectively in the target organism metabolism.
 
-The pathway score is a weighted sum of the `ReactionScore`.
-
-$$
-PathwayScore(Pathway) = \frac{\sum_{r \in Reaction(Pathway)}}{|Reaction(Pathway)|}
-$$
-
-The `ReactionScore` is computed as follows:
+The pathway score is a weighted sum of the $ReactionScore$.
 
 $$
-ReactionScore = 
+PathwayScore(Pathway) = \frac{\sum_{r \in Reaction(Pathway)} ReactionScore(r)}{|Reaction(Pathway)|}
 $$
+
+The \(ReactionScore\) is computed as follows:
+
+\[
+ReactionScore(reaction) = PresenceScore(reaction) + KeyReactionScore(reaction) + UniquenessScore(reaction) 
+\]
+
+The reaction score equals 0 if we did not find any evidence of a catalysis for this reaction.
+
+Then, the \(ReactionScore\) components are computed as follows:
+$$
+PresenceScore(reaction) = 
+\begin{cases}
+0.2 & \text{ if we found enzymes catalyzing this reaction } \\
+0 & \text{ otherwise }
+\end{cases}
+$$
+
+The key reaction score is computed as 
+$$
+KeyReactionScore(reaction) =
+\begin{cases}
+0.5 & \text{ if the reaction is considered a 'key' reaction for the pathway in MetaCyc } \\
+0 & \text{ otherwise }
+\end{cases}
+$$
+
+The uniqueness score is computed as follows:
+$$
+UniquenessScore(reaction) =  - \exp(|Pathway(reaction)| / 10)
+$$
+where \(|Pathway(reaction)|\) is the number of pathway having the reaction \(reaction\).
+
 
 ##### How to choose a good threshold?
 

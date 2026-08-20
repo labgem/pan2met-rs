@@ -15,9 +15,13 @@ use std::path::PathBuf;
     author = "Samuel Ortion <samuel@ortion.fr>"
 )]
 pub struct Arguments {
-    /// Input path to a file listing reactions
-    #[clap(short = 'r', long = "reactions", help = "Input list of reactions")]
-    reactions: PathBuf,
+    // /// Input path to a file listing reactions
+    // #[clap(short = 'r', long = "reactions", help = "Input list of reactions")]
+    // reaction: PathBuf,
+
+    /// Input path to a two column tab seperated values file listing protein and associated catalyzis
+    #[clap(short='r', long="gene-reaction", help="Input path to a two column tab seperated values file listing protein and associated catalyzis")]
+    gene_reaction: PathBuf,
 
     /// Input PADMet reference knowledge base
     #[clap(long = "padmet", help = "Reference metabolic network in PADMet format")]
@@ -34,6 +38,10 @@ pub struct Arguments {
     /// Taxon identifier
     #[clap(short = 't', long = "taxon-id", help = "NCBI Taxonomy identifier")]
     taxon_id: Option<u32>,
+
+    /// Input path to a two column tab seperated values file listing protein and associated catalyzis
+    #[clap(short='p', long="pangenome", help="Pangenome graph in graph-tool binary gt format")]
+    pangenome_graph_gt: Option<PathBuf>,
 
     /// Config
     #[clap(short = 'c', long = "config", help = "Configuration yaml file")]
@@ -55,8 +63,8 @@ pub struct Arguments {
 
 impl Arguments {
     /// Get reactions input path
-    pub fn reactions(&self) -> PathBuf {
-        self.reactions.clone()
+    pub fn gene_reaction(&self) -> PathBuf {
+        self.gene_reaction.clone()
     }
 
     /// Get reference PADMet file
@@ -67,6 +75,11 @@ impl Arguments {
     /// Get a taxon id
     pub fn taxon_id(&self) -> Option<u32> {
         self.taxon_id
+    }
+
+    /// Get the path of the pangenome graph_tool gt file
+    pub fn pangenome_graph_gt(&self) -> Option<PathBuf> {
+        self.pangenome_graph_gt.clone()
     }
 
     /// Get output filename

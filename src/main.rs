@@ -3,6 +3,7 @@
 #![warn(missing_docs)]
 
 /* std use */
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::Write;
@@ -11,19 +12,19 @@ use std::io::Write;
 use anyhow::Context as _;
 use clap::Parser as _;
 use padmet::spec::PadmetSpec;
+use pan2met::genomic_context::PangenomeGraph;
 use rule_kit::Rule as _;
 use rule_kit::RuleEngineBuilder;
 
 /* project use */
 use pan2met::config;
-use pan2met::error;
 use pan2met::decision_rules::{self, PathwayInferenceRule};
+use pan2met::error;
 use pan2met::{cli, inference};
 
 use pan2met::padmet::{padmet_pathway_ontology, padmet_reaction_order};
 
 mod input;
-use input::read_set;
 
 /// Run the inference
 fn pathway_inference(
@@ -32,6 +33,9 @@ fn pathway_inference(
     rules: &[decision_rules::PathwayInferenceRule],
     taxon_id: Option<String>,
     tax: &Option<taxonomy::GeneralTaxonomy>,
+    reaction_to_families: &HashMap<String, Vec<String>>,
+    families_to_reactions: &HashMap<String, Vec<String>>,
+    pangenome: Option<&PangenomeGraph>,
 ) -> Vec<String> {
     let mut infered: Vec<String> = Vec::new();
     for (pathway, pathway_reactions) in padmet_object.get_pathways_reactions() {
@@ -49,6 +53,9 @@ fn pathway_inference(
             tax,
             &reaction_order,
             padmet_object,
+            reaction_to_families,
+            families_to_reactions,
+            pangenome,
         );
         let mut engine = RuleEngineBuilder::new()
             .with_rules(rules.to_vec())
@@ -87,8 +94,6 @@ fn main() -> error::Result<()> {
         config::read_config(arguments.config()).expect("Error reading config");
     config::init_config(configuration);
 
-    log::info!("Loading catalyzed reactions.");
-    let reactome: HashSet<String> = read_set(arguments.reactions())?;
     log::info!("Loading PADMet reference.");
     let padmet_object: PadmetSpec = PadmetSpec::from_file(arguments.padmet())?;
 
@@ -110,14 +115,40 @@ fn main() -> error::Result<()> {
 
     log::info!("Start a metabolic pathway prediction.");
     let rules = PathwayInferenceRule::all();
-    let selected_rules: HashSet<String> =
-        config::config().rules.iter().cloned().collect();
+    let selected_rules: HashSet<String> = config::config().rules.iter().cloned().collect();
     let rules: Vec<PathwayInferenceRule> = rules
         .iter()
         .filter(|&rule| selected_rules.contains(rule.name()))
         .cloned()
         .collect();
-    let infered = pathway_inference(&reactome, &padmet_object, &rules, tax_id, &some_taxonomy);
+
+    let families_to_reactions = crate::input::read_mapping(arguments.gene_reaction()).unwrap();
+    let reaction_to_families: HashMap<String, Vec<String>> = crate::input::reverse_mapping(&families_to_reactions);
+
+    log::info!("Loading catalyzed reactions.");
+    let reactome: HashSet<String> = HashSet::from_iter(reaction_to_families.iter().map(|(k, _v)| k).cloned());
+
+    let pangenome: PangenomeGraph;
+    let some_pangenome: Option<&PangenomeGraph>;
+    if let Some(pangenome_gt_path) = arguments.pangenome_graph_gt() {
+        log::info!("Loading pangenome graph.");
+        pangenome = PangenomeGraph::from_gt(pangenome_gt_path).expect("Error opening the pangenome graph");
+        some_pangenome = Some(&pangenome);
+        log::info!("Pangenome graph loaded.");
+    } else {
+        some_pangenome = None;
+    }
+
+    let infered = pathway_inference(
+        &reactome,
+        &padmet_object,
+        &rules,
+        tax_id,
+        &some_taxonomy,
+        &reaction_to_families,
+        &families_to_reactions,
+        some_pangenome,
+    );
 
     let mut output_file = File::create(arguments.output())?;
     for pathway in infered {
