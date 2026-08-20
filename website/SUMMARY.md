@@ -7,6 +7,7 @@
 - [Install](install.md)
 - [Usage](usage.md)
 - [Example](example.md)
+- [Decision rules](decision_rules.md)
 
 # Contributor Guide
 
@@ -16,3 +17,4 @@
 - [Code of Conduct](code_of_conduct.md)
 - [Change log](change_log.md)
 - [License](license.md)
+

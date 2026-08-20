@@ -2,7 +2,7 @@
 
 Contributions are welcome, and they are greatly appreciated! Every little bit helps, and credit will always be given.
 
-Keep in mind as you contribute, that code, docs and other material submitted to this projects are considered licensed under  license.
+Keep in mind as you contribute, that code, docs and other material submitted to this projects are considered licensed under CeCILL license.
 
 ## Setup developement environment
 
@@ -13,8 +13,8 @@ If you want perform a documentation contribution install [mdbook](https://rust-l
 
 Before start any modification please create a specific branch:
 ```bash
-git switch -c fix_11         # branch create to fix issue 11
-git switch -c feat_index_rc  # branch to add a new index reverse complement method
+git switch -c fix/11         # branch create to fix issue 11
+git switch -c feat/index_rc  # branch to add a new index reverse complement method
 ```
 
 ## Code contribution
@@ -26,6 +26,12 @@ cargo fmt
 cargo clippy
 cargo test
 ```
+
+You should also run:
+```bash
+cargo clippy --fix --all-targets -- -D warnings 
+```
+to check if the CI/CD lint step would pass.
 
 You can check your new code are covered by run:
 ```bash

@@ -1,23 +1,15 @@
 # Install
 
-FOR LIB PACKAGE START
+To install `pan2met`, you should first clone the git repository and build `pan2met` from source.
+To build `pan2met` you will need a working installation of Rust on your machine. If Rust is not alreay installed on your machine, you will probably need to use [rustup](https://rustup.rs/) first.
 
-Add this in your Cargo.toml
-```
-rev_comp = { version = "0.1" }
-```
-
-FOR LIB PACKAGE END
-
-
-FOR BIN PACKAGE START
 
 ### From source
 
 ```bash
-git clone {repository_uri}
-cd rev_comp
+git clone https://github.com/labgem/pan2met-rs.git
+cd pan2met-rs
 cargo install --path
 ```
 
-FOR BIN PACKAGE END
+
