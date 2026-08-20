@@ -17,7 +17,7 @@ use rule_kit::RuleEngineBuilder;
 /* project use */
 use pan2met::config;
 use pan2met::error;
-use pan2met::inference_rules::{self, PathwayInferenceRule};
+use pan2met::decision_rules::{self, PathwayInferenceRule};
 use pan2met::{cli, inference};
 
 use pan2met::padmet::{padmet_pathway_ontology, padmet_reaction_order};
@@ -29,7 +29,7 @@ use input::read_set;
 fn pathway_inference(
     reactome: &HashSet<String>,
     padmet_object: &PadmetSpec,
-    rules: &[inference_rules::PathwayInferenceRule],
+    rules: &[decision_rules::PathwayInferenceRule],
     taxon_id: Option<String>,
     tax: &Option<taxonomy::GeneralTaxonomy>,
 ) -> Vec<String> {
@@ -39,7 +39,7 @@ fn pathway_inference(
         let reaction_order = padmet_reaction_order(&pathway, padmet_object);
         let missing_reactions = inference::get_missing_reactions(&pathway_reactions, reactome);
 
-        let mut inference = inference_rules::PathwayInference::new(
+        let mut inference = decision_rules::PathwayInference::new(
             &pathway,
             &pathway_classes,
             &pathway_reactions,
@@ -59,8 +59,8 @@ fn pathway_inference(
         if res.is_ok()
             && inference
                 .decision
-                .unwrap_or(inference_rules::Decision::Reject)
-                == inference_rules::Decision::Accept
+                .unwrap_or(decision_rules::Decision::Reject)
+                == decision_rules::Decision::Accept
         {
             infered.push(pathway);
         }

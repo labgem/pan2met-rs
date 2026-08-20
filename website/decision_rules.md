@@ -80,3 +80,8 @@ A false negative, on the other hand, is a pathway that is rejected by `pan2met` 
 ### Gene regulation
 
 Even if the genome of an organism contains genes coding for enzymes of all catalyzed steps of a pathway, this does not necessarily implies that the pathway is indeed effective in the organism. For instance, there might be gene regulatory mechanism that disable synchronous enzyme expression thus limiting the potential of such a pathway.
+This document aims at answer the following question: 
+> What are the decision rules implemented in this version of `pan2met`?
+
+## Pangenome graph topology / genomic context
+

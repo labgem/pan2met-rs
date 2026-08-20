@@ -3,7 +3,6 @@ title        = "pan2met-rs"
 authors      = ["LABGeM team"]
 description  = "predict metabolic pathways"
 language     = "en"
-multilingual = false
 src          = "website"
 
 [build]
@@ -14,6 +13,6 @@ create-missing = false
 smart-punctuation = true
 mathjax-support = true
 git-repository-url = "https://github.com/labgem/pan2met-rs/"
-git-repository-icon = "fa-github"
+git-repository-icon = "fab-git"
 edit-url-template = "https://github.com/labgem/pan2met-rs/edit/main/docs/{path}"
 site-url = "https://pan2met-rs.github.io/pan2met-rs"

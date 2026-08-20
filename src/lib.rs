@@ -10,10 +10,12 @@ pub mod cli;
 pub mod config;
 pub mod error;
 pub mod inference;
-pub mod inference_rules;
+pub mod decision_rules;
 pub mod padmet;
 pub mod pathway_score;
 pub mod taxonomy;
+pub mod genomic_context;
+pub mod input;
 
 /* project use */
 

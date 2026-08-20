@@ -111,7 +111,7 @@ pub enum PathwayInferenceRule {
 
 impl PathwayInferenceRule {
     pub fn all() -> Vec<PathwayInferenceRule> {
-        vec![
+        return vec![
             Self::TransportPathway,
             Self::SignalingPathway,
             Self::AllReactionsCatalyzed,
@@ -122,7 +122,7 @@ impl PathwayInferenceRule {
             Self::DegradationMissingFirst,
             Self::EnergyMissingHalf,
             Self::PathwayScore,
-        ]
+        ];
     }
 }
 
