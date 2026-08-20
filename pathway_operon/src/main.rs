@@ -46,17 +46,20 @@ fn main() {
         let reactions_vec: Vec<String> = reactions.iter().cloned().collect();
         let non_spontaneous_non_orphan_reaction_vec: Vec<String> =
             filter_non_orphan_non_spontaneous_reactions(&reactions_vec, &padmet_object);
-        if let Ok(result) = pathway_is_in_a_transitive_closure_context_graph(
-            &pangenome,
-            &non_spontaneous_non_orphan_reaction_vec,
-            &reactions_to_families,
-            &family_to_reactions,
-            transitive,
-        ) {
-            if result {
-                println!("operonic: {pathway:#}");
-            } else {
-                // println!("not operonic: {pathway:#}");
+        if non_spontaneous_non_orphan_reaction_vec.len() >= 2 {
+
+            if let Ok(result) = pathway_is_in_a_transitive_closure_context_graph(
+                &pangenome,
+                &non_spontaneous_non_orphan_reaction_vec,
+                &reactions_to_families,
+                &family_to_reactions,
+                transitive,
+            ) {
+                if result {
+                    println!("operonic: {pathway:#}");
+                } else {
+                    // println!("not operonic: {pathway:#}");
+                }
             }
         }
     }
