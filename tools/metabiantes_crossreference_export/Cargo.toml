@@ -1,0 +1,11 @@
+[package]
+name = "metabiantes_crossreference_export"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.6.6", features = ["derive"] }
+include-sql = "0.3.2"
+include-sqlite-sql = "0.2.2"
+pan2met = { version = "0.1.0", path = "../.." }
+rusqlite = "0.40.2"
